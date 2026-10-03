@@ -20,7 +20,7 @@ local Config = {
     YoutubeURL      = "https://www.youtube.com/channel/",
 
     -- [5] File System
-    KeyFileName     = "Keys.txt",
+    KeyFileName     = "MyKey.txt",
 
     -- [6] GUI Management
     OldGuiName      = "Solstice Hub", 
