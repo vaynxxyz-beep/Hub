@@ -121,16 +121,16 @@ local function redeemKey(key)
             if useNonce then
                 if decoded.data.hash == lDigest("true" .. "-" .. nonce .. "-" .. Config.PlatoSecret) then 
                     if writefile then pcall(writefile, Config.KeyFileName, key) end
-                    return true, "Success" 
+                    return true, "Success", false -- (success, message, isNetworkError)
                 end
-                return false, "Integrity Check Failed"
+                return false, "Integrity Check Failed", false
             end
             if writefile then pcall(writefile, Config.KeyFileName, key) end
-            return true, "Success"
+            return true, "Success", false
         end
-        return false, decoded.message or "Invalid Key"
+        return false, decoded.message or "Invalid Key", false
     end
-    return false, err or "Server Error"
+    return false, err or "Server Error", true -- Third return flag tells script it was a network error
 end
 
 -------------------------------------------------------------------------------
@@ -146,7 +146,7 @@ local function StartMainScript()
     loadstring(game:HttpGet(Config.MainScriptURL))()
 end
 
-local function CreateGUI(initialKey)
+local function CreateGUI(initialKey, initialMsg)
     local coreGui = game:GetService("CoreGui")
     local targetParent = pcall(function() return coreGui end) and coreGui or LocalPlayer:WaitForChild("PlayerGui")
     
@@ -159,7 +159,7 @@ local function CreateGUI(initialKey)
 
     -- Container Frame (Card)
     local MainFrame = Instance.new("Frame", ScreenGui)
-    MainFrame.Size = UDim2.new(0, 360, 0, 0) -- Auto height based on layout
+    MainFrame.Size = UDim2.new(0, 360, 0, 0)
     MainFrame.Position = UDim2.new(0.5, -180, 0.5, -200)
     MainFrame.BackgroundColor3 = Color3.fromRGB(15, 16, 22)
     MainFrame.BorderSizePixel = 0
@@ -397,8 +397,8 @@ local function CreateGUI(initialKey)
     Status.Name = "StatusLabel"
     Status.Size = UDim2.new(1, 0, 0, 18)
     Status.BackgroundTransparency = 1
-    Status.Text = initialKey and "Saved key expired or invalid." or "Awaiting key validation..."
-    Status.TextColor3 = initialKey and Color3.fromRGB(255, 150, 50) or Color3.fromRGB(110, 115, 135)
+    Status.Text = initialMsg or "Awaiting key validation..."
+    Status.TextColor3 = initialMsg and Color3.fromRGB(255, 100, 100) or Color3.fromRGB(110, 115, 135)
     Status.Font = Enum.Font.GothamMedium
     Status.TextSize = 12
     Status.LayoutOrder = currentOrder
@@ -457,7 +457,7 @@ local function CreateGUI(initialKey)
 end
 
 -------------------------------------------------------------------------------
---! INITIALIZATION
+--! INITIALIZATION WITH AUTOMATIC RETRIES
 -------------------------------------------------------------------------------
 local pGui = LocalPlayer:WaitForChild("PlayerGui")
 
@@ -466,7 +466,7 @@ if Config.MainGuiName ~= "" and pGui:FindFirstChild(Config.MainGuiName) then
     return
 end
 
--- Read saved key before opening GUI
+-- Read stored key silently on start
 local savedKey = nil
 if isfile and readfile then
     local ok, content = pcall(readfile, Config.KeyFileName)
@@ -476,14 +476,26 @@ if isfile and readfile then
 end
 
 if savedKey then
-    -- Silence auto-validation before showing GUI
     task.spawn(function()
-        local success, msg = redeemKey(savedKey)
+        local attempts = 0
+        local maxAttempts = 3
+        local success, msg, isNetErr = false, "", false
+        
+        -- Retry connection up to 3 times before displaying UI to handle temporary DNS issues
+        repeat
+            attempts = attempts + 1
+            success, msg, isNetErr = redeemKey(savedKey)
+            if not success and isNetErr and attempts < maxAttempts then
+                task.wait(1.5)
+            end
+        until success or not isNetErr or attempts >= maxAttempts
+        
         if success then
+            -- Silent Bypass: Directly launch main script without creating GUI
             StartMainScript()
         else
-            -- Key expired or invalid -> Open GUI pre-filled with old key
-            CreateGUI(savedKey)
+            -- Open UI only when key is confirmed invalid or expired
+            CreateGUI(savedKey, msg)
         end
     end)
 else
