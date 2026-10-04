@@ -1,7 +1,7 @@
 local HubName = "Solstice Hub"
 
 local SupportedGames = { -- put here the map id and script link, you can add more maps
-    [101558013317432] = "https://raw.githubusercontent.com/vaynxxyz-beep/Hub/refs/heads/main/Workbruh.lua",
+    [101558013317432] = "https://raw.githubusercontent.com/vaynxxyz-beep/Hub/refs/heads/main/Workbruh",
     [15269951959] = "https://raw.githubusercontent.com/vaynxxyz-beep/Hub/refs/heads/main/Legends%20Battleground"
 }
 
