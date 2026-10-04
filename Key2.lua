@@ -104,6 +104,9 @@ local function cacheLink()
 end
 
 local function redeemKey(key)
+    -- Run connectivity check first to ensure host domain is resolved properly
+    checkConnectivity()
+
     local nonce = generateNonce()
     local body = {identifier = lDigest(fGetHwid()), key = key}
     if useNonce then body.nonce = nonce end
@@ -121,7 +124,7 @@ local function redeemKey(key)
             if useNonce then
                 if decoded.data.hash == lDigest("true" .. "-" .. nonce .. "-" .. Config.PlatoSecret) then 
                     if writefile then pcall(writefile, Config.KeyFileName, key) end
-                    return true, "Success", false -- (success, message, isNetworkError)
+                    return true, "Success", false
                 end
                 return false, "Integrity Check Failed", false
             end
@@ -130,11 +133,11 @@ local function redeemKey(key)
         end
         return false, decoded.message or "Invalid Key", false
     end
-    return false, err or "Server Error", true -- Third return flag tells script it was a network error
+    return false, err or "Server Error", true
 end
 
 -------------------------------------------------------------------------------
---! MODERN GUI BUILDER
+--! GUI BUILDER & EXECUTION
 -------------------------------------------------------------------------------
 local function StartMainScript()
     local pGui = LocalPlayer:WaitForChild("PlayerGui")
@@ -152,12 +155,10 @@ local function CreateGUI(initialKey, initialMsg)
     
     if targetParent:FindFirstChild("OYB_KeySystem") then targetParent.OYB_KeySystem:Destroy() end
 
-    -- Main ScreenGui
     local ScreenGui = Instance.new("ScreenGui", targetParent)
     ScreenGui.Name = "OYB_KeySystem"
     ScreenGui.ResetOnSpawn = false
 
-    -- Container Frame (Card)
     local MainFrame = Instance.new("Frame", ScreenGui)
     MainFrame.Size = UDim2.new(0, 360, 0, 0)
     MainFrame.Position = UDim2.new(0.5, -180, 0.5, -200)
@@ -173,7 +174,6 @@ local function CreateGUI(initialKey, initialMsg)
     MainStroke.Thickness = 1
     MainStroke.Color = Color3.fromRGB(35, 38, 50)
 
-    -- Header Bar
     local Header = Instance.new("Frame", MainFrame)
     Header.Size = UDim2.new(1, 0, 0, 45)
     Header.BackgroundColor3 = Color3.fromRGB(20, 22, 30)
@@ -207,7 +207,6 @@ local function CreateGUI(initialKey, initialMsg)
     end)
     CloseBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
 
-    -- Content Layout
     local Content = Instance.new("Frame", MainFrame)
     Content.Position = UDim2.new(0, 0, 0, 45)
     Content.Size = UDim2.new(1, 0, 1, -45)
@@ -224,7 +223,6 @@ local function CreateGUI(initialKey, initialMsg)
     Padding.PaddingLeft = UDim.new(0, 15)
     Padding.PaddingRight = UDim.new(0, 15)
 
-    -- Description
     local Description = Instance.new("TextLabel", Content)
     Description.Size = UDim2.new(1, 0, 0, 0)
     Description.AutomaticSize = Enum.AutomaticSize.Y
@@ -237,7 +235,6 @@ local function CreateGUI(initialKey, initialMsg)
     Description.TextXAlignment = Enum.TextXAlignment.Left
     Description.LayoutOrder = 1
 
-    -- Social Helper Function
     local function CreateSocialButton(text, color, iconId, url, order)
         local Btn = Instance.new("TextButton", Content)
         Btn.Size = UDim2.new(1, 0, 0, 36)
@@ -310,7 +307,6 @@ local function CreateGUI(initialKey, initialMsg)
         currentOrder = currentOrder + 1
     end
 
-    -- Input Box
     local KeyInputFrame = Instance.new("Frame", Content)
     KeyInputFrame.Size = UDim2.new(1, 0, 0, 40)
     KeyInputFrame.BackgroundColor3 = Color3.fromRGB(20, 22, 30)
@@ -342,7 +338,6 @@ local function CreateGUI(initialKey, initialMsg)
 
     currentOrder = currentOrder + 1
 
-    -- Action Buttons Group
     local ActionGroup = Instance.new("Frame", Content)
     ActionGroup.Size = UDim2.new(1, 0, 0, 38)
     ActionGroup.BackgroundTransparency = 1
@@ -392,7 +387,6 @@ local function CreateGUI(initialKey, initialMsg)
 
     currentOrder = currentOrder + 1
 
-    -- Status Text
     local Status = Instance.new("TextLabel", Content)
     Status.Name = "StatusLabel"
     Status.Size = UDim2.new(1, 0, 0, 18)
@@ -403,7 +397,6 @@ local function CreateGUI(initialKey, initialMsg)
     Status.TextSize = 12
     Status.LayoutOrder = currentOrder
 
-    -- Auto Adjust Frame Size based on contents
     local function UpdateFrameSize()
         local totalHeight = Layout.AbsoluteContentSize.Y + 75
         MainFrame.Size = UDim2.new(0, 360, 0, totalHeight)
@@ -411,7 +404,6 @@ local function CreateGUI(initialKey, initialMsg)
     Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateFrameSize)
     task.spawn(UpdateFrameSize)
 
-    -- Button Functionality
     VerifyBtn.MouseButton1Click:Connect(function()
         local key = KeyInput.Text
         if key == "" then 
@@ -457,7 +449,7 @@ local function CreateGUI(initialKey, initialMsg)
 end
 
 -------------------------------------------------------------------------------
---! INITIALIZATION WITH AUTOMATIC RETRIES
+--! INITIALIZATION WITH AUTOMATIC DOMAIN FALLBACK
 -------------------------------------------------------------------------------
 local pGui = LocalPlayer:WaitForChild("PlayerGui")
 
@@ -466,7 +458,7 @@ if Config.MainGuiName ~= "" and pGui:FindFirstChild(Config.MainGuiName) then
     return
 end
 
--- Read stored key silently on start
+-- Read stored key silently
 local savedKey = nil
 if isfile and readfile then
     local ok, content = pcall(readfile, Config.KeyFileName)
@@ -477,24 +469,12 @@ end
 
 if savedKey then
     task.spawn(function()
-        local attempts = 0
-        local maxAttempts = 3
-        local success, msg, isNetErr = false, "", false
-        
-        -- Retry connection up to 3 times before displaying UI to handle temporary DNS issues
-        repeat
-            attempts = attempts + 1
-            success, msg, isNetErr = redeemKey(savedKey)
-            if not success and isNetErr and attempts < maxAttempts then
-                task.wait(1.5)
-            end
-        until success or not isNetErr or attempts >= maxAttempts
+        -- Directly calls checkConnectivity() via redeemKey to resolve api.platoboost.net
+        local success, msg = redeemKey(savedKey)
         
         if success then
-            -- Silent Bypass: Directly launch main script without creating GUI
             StartMainScript()
         else
-            -- Open UI only when key is confirmed invalid or expired
             CreateGUI(savedKey, msg)
         end
     end)
