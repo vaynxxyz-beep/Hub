@@ -10,6 +10,7 @@ local SupportedGames = { -- put here the map id and script link, you can add mor
     [93853815957083] = "https://raw.githubusercontent.com/vaynxxyz-beep/Hub/refs/heads/main/Sharp",
     [105834187369271] = "https://raw.githubusercontent.com/vaynxxyz-beep/Hub/refs/heads/main/Sharp",
     [137626413669175] = "https://raw.githubusercontent.com/vaynxxyz-beep/Hub/refs/heads/main/%2B1%20Karate%20Evolution",
+    [116479409623658] = "https://raw.githubusercontent.com/vaynxxyz-beep/Hub/refs/heads/main/%2B1%20Karate%20Evolution",
     [138352221662770] = "https://raw.githubusercontent.com/vaynxxyz-beep/Hub/refs/heads/main/%2B1%20Karate%20Evolution",
     [120731410233153] = "https://raw.githubusercontent.com/vaynxxyz-beep/Hub/refs/heads/main/%2B1%20Assassin%20Leveling",
     [13076380114] = "https://raw.githubusercontent.com/vaynxxyz-beep/Hub/refs/heads/main/Hero%20Battleground",
