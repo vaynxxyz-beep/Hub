@@ -8,6 +8,7 @@ local SupportedGames = { -- put here the map id and script link, you can add mor
     [142823291] = "https://raw.githubusercontent.com/vaynxxyz-beep/Hub/refs/heads/main/nmm2",
     [113506071094099] = "https://raw.githubusercontent.com/vaynxxyz-beep/Hub/refs/heads/main/Sharp",
     [93853815957083] = "https://raw.githubusercontent.com/vaynxxyz-beep/Hub/refs/heads/main/Sharp",
+    [102085041605973] = "https://raw.githubusercontent.com/vaynxxyz-beep/Hub/refs/heads/main/Sharp",
     [105834187369271] = "https://raw.githubusercontent.com/vaynxxyz-beep/Hub/refs/heads/main/Sharp",
     [137626413669175] = "https://raw.githubusercontent.com/vaynxxyz-beep/Hub/refs/heads/main/%2B1%20Karate%20Evolution",
     [116479409623658] = "https://raw.githubusercontent.com/vaynxxyz-beep/Hub/refs/heads/main/%2B1%20Karate%20Evolution",
